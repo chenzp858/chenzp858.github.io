@@ -1,0 +1,1269 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <meta name="keywords" content="Hexo Theme Redefine">
+    
+    <meta name="author" content="chenzp858">
+    
+    <!-- Completely eliminate flash of wrong theme -->
+    <script>
+        (function() {
+            const THEME_KEY = "REDEFINE-THEME-STATUS";
+            const DARK = "dark", LIGHT = "light";
+            
+            // Get preferred theme
+            function getTheme() {
+                try {
+                    const saved = localStorage.getItem(THEME_KEY);
+                    if (saved) {
+                        const { isDark } = JSON.parse(saved);
+                        return isDark ? DARK : LIGHT;
+                    }
+                } catch (e) {}
+                
+                return matchMedia("(prefers-color-scheme: dark)").matches ? DARK : LIGHT;
+            }
+            
+            // Apply theme to document
+            function applyTheme(theme) {
+                const isDark = theme === DARK;
+                const root = document.documentElement;
+                
+                // Set data attribute for CSS variables
+                root.setAttribute("data-theme", theme);
+                
+                // Set classes for compatibility
+                root.classList.add(theme);
+                root.classList.remove(isDark ? LIGHT : DARK);
+                root.style.colorScheme = theme;
+            }
+            
+            // Initial application
+            const theme = getTheme();
+            applyTheme(theme);
+            
+            // Listen for system preference changes
+            matchMedia("(prefers-color-scheme: dark)").addEventListener("change", ({ matches }) => {
+                // Only update if using system preference (no localStorage entry)
+                if (!localStorage.getItem(THEME_KEY)) {
+                    applyTheme(matches ? DARK : LIGHT);
+                }
+            });
+            
+            // Set body classes once DOM is ready
+            if (document.readyState !== "loading") {
+                document.body.classList.add(theme + "-mode");
+            } else {
+                document.addEventListener("DOMContentLoaded", () => {
+                    document.body.classList.add(theme + "-mode");
+                    document.body.classList.remove((theme === DARK ? LIGHT : DARK) + "-mode");
+                });
+            }
+        })();
+    </script>
+    
+    <!-- Critical CSS to prevent flash -->
+    <style>
+        :root[data-theme="dark"] {
+            --background-color: #202124;
+            --background-color-transparent: rgba(32, 33, 36, 0.6);
+            --second-background-color: #2d2e32;
+            --third-background-color: #34353a;
+            --third-background-color-transparent: rgba(32, 33, 36, 0.6);
+            --primary-color: #0066CC;
+            --first-text-color: #ffffff;
+            --second-text-color: #eeeeee;
+            --third-text-color: #bebec6;
+            --fourth-text-color: #999999;
+            --default-text-color: #bebec6;
+            --invert-text-color: #373D3F;
+            --border-color: rgba(255, 255, 255, 0.08);
+            --selection-color: #0066CC;
+            --shadow-color-1: rgba(255, 255, 255, 0.08);
+            --shadow-color-2: rgba(255, 255, 255, 0.05);
+        }
+        
+        :root[data-theme="light"] {
+            --background-color: #fff;
+            --background-color-transparent: rgba(255, 255, 255, 0.6);
+            --second-background-color: #f8f8f8;
+            --third-background-color: #f2f2f2;
+            --third-background-color-transparent: rgba(241, 241, 241, 0.6);
+            --primary-color: #0066CC;
+            --first-text-color: #16171a;
+            --second-text-color: #2f3037;
+            --third-text-color: #5e5e5e;
+            --fourth-text-color: #eeeeee;
+            --default-text-color: #373D3F;
+            --invert-text-color: #bebec6;
+            --border-color: rgba(0, 0, 0, 0.08);
+            --selection-color: #0066CC;
+            --shadow-color-1: rgba(0, 0, 0, 0.08);
+            --shadow-color-2: rgba(0, 0, 0, 0.05);
+        }
+        
+        body {
+            background-color: var(--background-color);
+            color: var(--default-text-color);
+        }
+        
+        /* Apply body classes as soon as DOM is ready */
+        :root[data-theme="dark"] body {
+            background-color: var(--background-color);
+            color: var(--default-text-color);
+        }
+    </style>
+    
+    <!-- preconnect -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+
+    
+    <!--- Seo Part-->
+    
+    <link rel="canonical" href="http://example.com/post/361b4ed7.html"/>
+    <meta name="robots" content="index,follow">
+    <meta name="googlebot" content="index,follow">
+    <meta name="revisit-after" content="1 days">
+    
+    
+    
+        
+        <meta name="description" content="Cesium学习笔记1.Cesium坐标转换及源码分析 1.1Cesium坐标系问题​         Cesium坐标系主要分为地理坐标系和笛卡尔坐标系（地理坐标系，地心地固坐标系，东-北-上局部坐标系和屏幕坐标系） 1.1.1WGS84 坐标系（地理坐标系）格式：[经度，纬度，高度]       经度（Longitude）：-180° 到 180°，东经为正。      纬度（Latitude">
+<meta property="og:type" content="article">
+<meta property="og:title" content="Cesium">
+<meta property="og:url" content="http://example.com/post/361b4ed7.html">
+<meta property="og:site_name" content="Hexo">
+<meta property="og:description" content="Cesium学习笔记1.Cesium坐标转换及源码分析 1.1Cesium坐标系问题​         Cesium坐标系主要分为地理坐标系和笛卡尔坐标系（地理坐标系，地心地固坐标系，东-北-上局部坐标系和屏幕坐标系） 1.1.1WGS84 坐标系（地理坐标系）格式：[经度，纬度，高度]       经度（Longitude）：-180° 到 180°，东经为正。      纬度（Latitude">
+<meta property="og:locale" content="en_US">
+<meta property="og:image" content="http://example.com/images/redefine-og.webp">
+<meta property="article:published_time" content="2025-10-10T04:32:29.000Z">
+<meta property="article:modified_time" content="2025-10-12T13:18:25.066Z">
+<meta property="article:author" content="John Doe">
+<meta name="twitter:card" content="summary">
+<meta name="twitter:image" content="http://example.com/images/redefine-og.webp">
+    
+    
+    <!--- Icon Part-->
+    <link rel="icon" type="image/png" href="/images/redefine-favicon.svg" sizes="192x192">
+    <link rel="apple-touch-icon" sizes="180x180" href="/images/redefine-favicon.svg">
+    <meta name="theme-color" content="#A31F34">
+    <link rel="shortcut icon" href="/images/redefine-favicon.svg">
+    <!--- Page Info-->
+    
+    <title>
+        
+            Cesium | Webgis
+        
+    </title>
+
+    
+<link rel="stylesheet" href="/fonts/Chillax/chillax.css">
+
+
+    <!--- Inject Part-->
+    
+
+    
+<link rel="stylesheet" href="/css/style.css">
+
+
+    
+        
+<link rel="stylesheet" href="/css/build/tailwind.css">
+
+    
+
+    
+<link rel="stylesheet" href="/fonts/GeistMono/geist-mono.css">
+
+    
+<link rel="stylesheet" href="/fonts/Geist/geist.css">
+
+    <!--- Font Part-->
+    
+    
+    
+    
+    
+    
+
+    <script id="hexo-configurations">
+    window.config = {"hostname":"example.com","root":"/","language":"en","path":"search.json"};
+    window.theme = {"articles":{"style":{"font_size":"16px","line_height":1.5,"image_border_radius":"14px","image_alignment":"center","image_caption":false,"link_icon":true,"delete_mask":false,"title_alignment":"left","headings_top_spacing":{"h1":"3.2rem","h2":"2.4rem","h3":"1.9rem","h4":"1.6rem","h5":"1.4rem","h6":"1.3rem"}},"word_count":{"enable":true,"count":true,"min2read":true},"author_label":{"enable":true,"auto":false,"list":[]},"code_block":{"copy":true,"style":"mac","highlight_theme":{"light":"github","dark":"vs2015"},"font":{"enable":false,"family":null,"url":null}},"toc":{"enable":true,"max_depth":3,"number":false,"expand":true,"init_open":true},"copyright":{"enable":true,"default":"cc_by_nc_sa"},"lazyload":true,"pangu_js":false,"recommendation":{"enable":false,"title":"推荐阅读","limit":3,"mobile_limit":2,"placeholder":"/images/wallhaven-wqery6-light.webp","skip_dirs":[]}},"colors":{"primary":"#A31F34","secondary":null,"default_mode":"light"},"global":{"fonts":{"chinese":{"enable":false,"family":null,"url":null},"english":{"enable":false,"family":null,"url":null},"title":{"enable":false,"family":null,"url":null}},"content_max_width":"1000px","sidebar_width":"210px","hover":{"shadow":true,"scale":false},"scroll_progress":{"bar":false,"percentage":true},"website_counter":{"url":"https://cn.vercount.one/js","enable":true,"site_pv":true,"site_uv":true,"post_pv":true},"single_page":true,"preloader":{"enable":false,"custom_message":null},"side_tools":{"gear_rotation":true,"auto_expand":false},"open_graph":{"enable":true,"image":"/images/redefine-og.webp","description":null},"google_analytics":{"enable":false,"id":null}},"home_banner":{"enable":true,"style":"fixed","image":{"light":"/images/wallhaven-wqery6-light.webp","dark":"/images/wallhaven-wqery6-dark.webp"},"title":"Webgis","subtitle":{"text":[],"hitokoto":{"enable":false,"show_author":false,"api":"https://v1.hitokoto.cn"},"typing_speed":100,"backing_speed":80,"starting_delay":500,"backing_delay":1500,"loop":true,"smart_backspace":true},"text_color":{"light":"#fff","dark":"#d1d1b6"},"text_style":{"title_size":"2.8rem","subtitle_size":"1.5rem","line_height":1.2},"custom_font":{"enable":false,"family":null,"url":null},"social_links":{"enable":false,"style":"default","links":{"github":null,"instagram":null,"zhihu":null,"twitter":null,"email":null},"qrs":{"weixin":null}}},"plugins":{"feed":{"enable":false},"aplayer":{"enable":false,"type":"fixed","audios":[{"name":null,"artist":null,"url":null,"cover":null,"lrc":null}]},"mermaid":{"enable":false,"version":"11.4.1"}},"version":"2.8.5","navbar":{"auto_hide":false,"color":{"left":"#f78736","right":"#367df7","transparency":35},"width":{"home":"1200px","pages":"1000px"},"links":{"Home":{"path":"/","icon":"fa-regular fa-house"}},"search":{"enable":false,"preload":true}},"page_templates":{"friends_column":2,"tags_style":"blur"},"home":{"sidebar":{"enable":true,"position":"left","first_item":"menu","announcement":null,"show_on_mobile":true,"links":null},"article_date_format":"auto","excerpt_length":200,"categories":{"enable":true,"limit":3},"tags":{"enable":true,"limit":3}},"footerStart":"2022/8/17 11:45:14"};
+    window.lang_ago = {"second":"%s seconds ago","minute":"%s minutes ago","hour":"%s hours ago","day":"%s days ago","week":"%s weeks ago","month":"%s months ago","year":"%s years ago"};
+    window.data = {"masonry":false};
+  </script>
+    
+    <!--- Fontawesome Part-->
+    
+<link rel="stylesheet" href="/fontawesome/fontawesome.min.css">
+
+    
+<link rel="stylesheet" href="/fontawesome/brands.min.css">
+
+    
+<link rel="stylesheet" href="/fontawesome/solid.min.css">
+
+    
+<link rel="stylesheet" href="/fontawesome/regular.min.css">
+
+    
+    
+    
+    
+<meta name="generator" content="Hexo 8.0.0"></head>
+
+
+
+<body>
+	<div class="progress-bar-container">
+	
+
+	
+	<span class="pjax-progress-bar"></span>
+	<!--        <span class="swup-progress-icon">-->
+	<!--            <i class="fa-solid fa-circle-notch fa-spin"></i>-->
+	<!--        </span>-->
+	
+</div>
+
+<main class="page-container" id="swup">
+
+	
+
+	<div class="main-content-container flex flex-col justify-between min-h-dvh">
+		<div class="main-content-header">
+			<header class="navbar-container px-6 md:px-12">
+    <div class="navbar-content transition-navbar ">
+        <div class="left">
+            
+            <a class="logo-title" href="/">
+                
+                Webgis
+                
+            </a>
+        </div>
+
+        <div class="right">
+            <!-- PC -->
+            <div class="desktop">
+                <ul class="navbar-list">
+                    
+                        
+                            
+
+                            <li class="navbar-item">
+                                <!-- Menu -->
+                                <a class=""
+                                   href="/"
+                                        >
+                                    <i class="fa-regular fa-house fa-fw"></i>
+                                    HOME
+                                    
+                                </a>
+
+                                <!-- Submenu -->
+                                
+                            </li>
+                    
+                    
+                </ul>
+            </div>
+            <!-- Mobile -->
+            <div class="mobile">
+                
+                <div class="icon-item navbar-bar">
+                    <div class="navbar-bar-middle"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Mobile sheet -->
+    <div class="navbar-drawer h-dvh w-full absolute top-0 left-0 bg-background-color flex flex-col justify-between">
+        <ul class="drawer-navbar-list flex flex-col px-4 justify-center items-start">
+            
+                
+                    
+
+                    <li class="drawer-navbar-item text-base my-1.5 flex flex-col w-full">
+                        
+                        <a class="py-1.5 px-2 flex flex-row items-center justify-between gap-1 hover:!text-primary active:!text-primary text-2xl font-semibold group border-b border-border-color hover:border-primary w-full "
+                           href="/"
+                        >
+                            <span>
+                                HOME
+                            </span>
+                            
+                                <i class="fa-regular fa-house fa-sm fa-fw"></i>
+                            
+                        </a>
+                        
+
+                        
+                    </li>
+            
+
+            
+            
+        </ul>
+
+        <div class="statistics flex justify-around my-2.5">
+    <a class="item tag-count-item flex flex-col justify-center items-center w-20" href="/tags">
+        <div class="number text-2xl sm:text-xl text-second-text-color font-semibold">0</div>
+        <div class="label text-third-text-color text-sm">Tags</div>
+    </a>
+    <a class="item tag-count-item flex flex-col justify-center items-center w-20" href="/categories">
+        <div class="number text-2xl sm:text-xl text-second-text-color font-semibold">0</div>
+        <div class="label text-third-text-color text-sm">Categories</div>
+    </a>
+    <a class="item tag-count-item flex flex-col justify-center items-center w-20" href="/archives">
+        <div class="number text-2xl sm:text-xl text-second-text-color font-semibold">6</div>
+        <div class="label text-third-text-color text-sm">Posts</div>
+    </a>
+</div>
+    </div>
+
+    <div class="window-mask"></div>
+
+</header>
+
+
+		</div>
+
+		<div class="main-content-body transition-fade-up">
+			
+
+			<div class="main-content">
+				<div class="post-page-container flex relative justify-between box-border w-full h-full">
+	<div class="article-content-container">
+
+		<div class="article-title relative w-full">
+			
+			<div class="w-full flex items-center pt-6 justify-start">
+				<h1 class="article-title-regular text-second-text-color tracking-tight text-4xl md:text-6xl font-semibold px-2 sm:px-6 md:px-8 py-3">Cesium</h1>
+			</div>
+			
+		</div>
+
+		
+		<div class="article-header flex flex-row gap-2 items-center px-2 sm:px-6 md:px-8">
+			<div class="avatar w-[46px] h-[46px] flex-shrink-0 rounded-medium border border-border-color p-[1px]">
+				<img src="/images/redefine-avatar.svg">
+			</div>
+			<div class="info flex flex-col justify-between">
+				<div class="author flex items-center">
+					<span class="name text-default-text-color text-lg font-semibold">chenzp858</span>
+					
+					<span class="author-label ml-1.5 text-xs px-2 py-0.5 rounded-small text-third-text-color border border-shadow-color-1">Lv1</span>
+					
+				</div>
+				<div class="meta-info">
+					<div class="article-meta-info">
+    <span class="article-date article-meta-item">
+        <i class="fa-regular fa-pen-fancy"></i>&nbsp;
+        <span class="desktop">2025-10-10 12:32:29</span>
+        <span class="mobile">2025-10-10 12:32:29</span>
+        <span class="hover-info">Created</span>
+    </span>
+    
+        <span class="article-date article-meta-item">
+            <i class="fa-regular fa-wrench"></i>&nbsp;
+            <span class="desktop">2025-10-12 21:18:25</span>
+            <span class="mobile">2025-10-12 21:18:25</span>
+            <span class="hover-info">Updated</span>
+        </span>
+    
+
+    
+    
+
+    
+    
+    
+    
+        <span class="article-pv article-meta-item">
+            <i class="fa-regular fa-eye"></i>&nbsp;<span id="busuanzi_value_page_pv"></span>
+        </span>
+    
+</div>
+
+				</div>
+			</div>
+		</div>
+		
+
+		
+
+
+		<div class="article-content markdown-body px-2 sm:px-6 md:px-8 pb-8">
+			<h1 id="Cesium学习笔记"><a href="#Cesium学习笔记" class="headerlink" title="Cesium学习笔记"></a>Cesium学习笔记</h1><p>1.Cesium坐标转换及源码分析</p>
+<h3 id="1-1Cesium坐标系问题"><a href="#1-1Cesium坐标系问题" class="headerlink" title="1.1Cesium坐标系问题"></a>1.1Cesium坐标系问题</h3><p>​         Cesium坐标系主要分为地理坐标系和笛卡尔坐标系（<strong>地理坐标系，地心地固坐标系，东-北-上局部坐标系和屏幕坐标系</strong>）</p>
+<h3 id="1-1-1WGS84-坐标系（地理坐标系）"><a href="#1-1-1WGS84-坐标系（地理坐标系）" class="headerlink" title="1.1.1WGS84 坐标系（地理坐标系）"></a>1.1.1WGS84 坐标系（<a target="_blank" rel="noopener" href="https://so.csdn.net/so/search?q=%E5%9C%B0%E7%90%86%E5%9D%90%E6%A0%87%E7%B3%BB&spm=1001.2101.3001.7020">地理坐标系</a>）</h3><p><strong>格式：[经度，纬度，高度]</strong><br>       经度（Longitude）：-180° 到 180°，东经为正。<br>      纬度（Latitude）：-90° 到 90°，北纬为正。<br>      <strong>高度（Height）：椭球体高度（米），基于 WGS84 椭球面。</strong><br>核心用途：人类可读的地理位置输入（如 GPS 坐标、地图标记）</p>
+<p>  <strong>WGS84 高度是相对于椭球面的，如需获取真实地面高度，需使用地形数据。</strong></p>
+<h3 id="1-1-2地心地固坐标系（ECEF）（重要知识点）"><a href="#1-1-2地心地固坐标系（ECEF）（重要知识点）" class="headerlink" title="1.1.2地心地固坐标系（ECEF）（重要知识点）"></a>1.1.2地心地固坐标系（ECEF）（重要知识点）</h3><p>​       地心地固坐标系（Earth-Centered, Earth-Fixed，简称ECEF）简称地心坐标系，是一种以地心为原点的地固坐标系（也称地球坐标系），是一种<strong>笛卡儿坐标系</strong>。原点 O (0,0,0)为地球质心，z 轴与地轴平行指向北极点，x 轴指向本初子午线与赤道的交点，y 轴垂直于xOz平面(即东经90度与赤道的交点)构成右手坐标系。</p>
+<ul>
+<li><strong>原点</strong>：地球质心。<ul>
+<li><p><strong>轴方向</strong></p>
+</li>
+<li><p><strong>X 轴</strong>：赤道与本初子午线（0° 经度）的交点。</p>
+</li>
+<li><p><strong>Z 轴</strong>：地球自转轴（指向北极）。</p>
+</li>
+<li><p><strong>Y 轴</strong>：与 X、Z 轴构成右手坐标系（东经 90° 方向）。</p>
+</li>
+</ul>
+</li>
+</ul>
+<p><img src="/image-20250528135043009.png" alt="image-20250528135043009">经纬度要转为弧度进行计算，它的本质就是弧度</p>
+<p>将地理坐标（经度λ、纬度φ、高度h）转换为ECEF笛卡尔坐标（X, Y, Z）的公式如下：</p>
+<p>X &#x3D; (N + h) * cosφ * cosλ</p>
+<p>Y &#x3D; (N + h) * cosφ * sinλ</p>
+<p>Z &#x3D; (N * (1 - e²) + h) * sinφ</p>
+<p>经纬度要转为弧.度进行计算，它的本质就是弧度</p>
+<p>X &#x3D; (N + h) * cosφ * cosλ<br>Y &#x3D; (N + h) * cosφ * sinλ<br>Z &#x3D; (N * (1 - e²) + h) * sinφ</p>
+<p>*<em>卯酉圈曲率半径 N*</em></p>
+<ul>
+<li><p><strong>定义</strong>：在给定纬度 ϕ<em>ϕ</em> 处，垂直于子午面的曲率半径（即东西方向的曲率半径）。</p>
+</li>
+<li><p><strong>计算公式</strong>：</p>
+<p><strong>物理意义</strong>：</p>
+<ul>
+<li>在赤道（ϕ&#x3D;0°<em>ϕ</em>&#x3D;0°）时，N&#x3D;a<em>N</em>&#x3D;<em>a</em>（最大）。</li>
+<li>在极点（ϕ&#x3D;90°<em>ϕ</em>&#x3D;90°）时，N&#x3D;a1−e2<em>N</em>&#x3D;1−<em>e</em>2<em>a</em>（最小）。</li>
+</ul>
+</li>
+<li><p><strong>作用</strong>：用于计算ECEF坐标的 X,Y,Z<em>X</em>,<em>Y</em>,<em>Z</em> 分量。</p>
+</li>
+</ul>
+<h3 id="1-1-3四元数"><a href="#1-1-3四元数" class="headerlink" title="1.1.3四元数"></a>1.1.3四元数</h3><ul>
+<li><p>用途：<strong>表示 3D 旋转</strong>，避免万向节锁问题，且计算效率高。</p>
+</li>
+<li><p>结构：包含 4 个分量 [x, y, z, w]，通常表示绕某个轴的旋转。</p>
+</li>
+<li><p>公式：</p>
+</li>
+<li><p>$$<br>q&#x3D;[x,y,z,w]&#x3D;cos(θ&#x2F;2)+(i⋅x+j⋅y+k⋅z)sin(θ&#x2F;2)<br>$$</p>
+<p>其中，θ 是旋转角度，(x,y,z) 是旋转轴。</p>
+</li>
+<li><p>紧凑性：<strong>仅需 4 个数值，内存占用小于矩阵。</strong></p>
+</li>
+<li><p>插值平滑：适合球面线性插值（SLERP），用于动画过渡。</p>
+</li>
+<li><p>归一化：四元数必须归一化（长度为 1）才能正确表示旋转。</p>
+</li>
+<li><figure class="highlight html"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line">//创建四元数</span><br><span class="line">const axis = new Cesiun.Cartesian3(0,1,0)//定义Y轴</span><br><span class="line">const angle = Cesium.Math.toRadians(90); // 弧度</span><br><span class="line">const quaternion = Cesium.Quaternion.fromAxisAngle(axis, angle);</span><br><span class="line">// 应用四元数到实体方向</span><br><span class="line">entity.orientation = quaternion;</span><br></pre></td></tr></table></figure></li>
+</ul>
+<h3 id="1-1-4webgl的坐标系统"><a href="#1-1-4webgl的坐标系统" class="headerlink" title="1.1.4webgl的坐标系统"></a>1.1.4webgl的坐标系统</h3><p><img src="C:\Users\czpjoe\AppData\Roaming\Typora\typora-user-images\image-20250529131219930.png" alt="image-20250529131219930"></p>
+<p>在 <strong>Cesium</strong>（基于WebGL）中，视口（<code>viewport</code>）的坐标系遵循 <strong>WebGL 标准</strong>，即：<br><strong><code>(0, 0)</code> 表示屏幕的左下角</strong>，<code>x</code> 向右增加，<code>y</code> 向上增加。这一点与浏览器DOM的坐标系（左上角为 <code>(0, 0)</code>）不同，需要特别注意。</p>
+<figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">const</span> viewer = <span class="keyword">new</span> <span class="title class_">Cesium</span>.<span class="title class_">Viewer</span>(<span class="string">&quot;cesiumContainer&quot;</span>);</span><br><span class="line"><span class="keyword">const</span> scene = viewer.<span class="property">scene</span>;</span><br><span class="line"><span class="keyword">const</span> passState = scene.<span class="property">_view</span>.<span class="property">passState</span>;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 保存原始视口</span></span><br><span class="line"><span class="keyword">const</span> originalViewport = passState.<span class="property">viewport</span>;</span><br><span class="line"></span><br><span class="line"><span class="comment">// 临时修改视口（渲染到左上角 400x300 区域）</span></span><br><span class="line">passState.<span class="property">viewport</span> = <span class="keyword">new</span> <span class="title class_">Cesium</span>.<span class="title class_">BoundingRectangle</span>(<span class="number">0</span>, canvas.<span class="property">height</span> - <span class="number">300</span>, <span class="number">400</span>, <span class="number">300</span>);</span><br><span class="line"></span><br><span class="line"><span class="comment">// 执行自定义渲染（如绘制特殊效果）</span></span><br><span class="line"><span class="comment">// ...</span></span><br><span class="line"></span><br><span class="line"><span class="comment">// 恢复原始视口</span></span><br><span class="line">passState.<span class="property">viewport</span> = originalViewport;</span><br></pre></td></tr></table></figure>
+
+<p><img src="C:\Users\czpjoe\AppData\Roaming\Typora\typora-user-images\image-20250611190705235.png" alt="image-20250611190705235"></p>
+<h3 id="1-Cesium-WebGL-视口坐标系详解"><a href="#1-Cesium-WebGL-视口坐标系详解" class="headerlink" title="1. Cesium&#x2F;WebGL 视口坐标系详解"></a><strong>1. Cesium&#x2F;WebGL 视口坐标系详解</strong></h3><table>
+<thead>
+<tr>
+<th align="left">属性</th>
+<th align="left">方向</th>
+<th align="left">范围</th>
+<th align="left">示例（屏幕分辨率 <code>1920x1080</code>）</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left"><strong><code>x</code></strong></td>
+<td align="left">水平（→）</td>
+<td align="left"><code>0</code>（左边界）→ <code>canvas.width</code></td>
+<td align="left"><code>x=100</code> 表示距离左侧 100 像素</td>
+</tr>
+<tr>
+<td align="left"><strong><code>y</code></strong></td>
+<td align="left">垂直（↑）</td>
+<td align="left"><code>0</code>（下边界）→ <code>canvas.height</code></td>
+<td align="left"><code>y=200</code> 表示距离底部 200 像素</td>
+</tr>
+<tr>
+<td align="left"><strong><code>width</code></strong></td>
+<td align="left">宽度</td>
+<td align="left">视口的横向像素数</td>
+<td align="left"><code>width=800</code> 表示视口宽 800 像素</td>
+</tr>
+<tr>
+<td align="left"><strong><code>height</code></strong></td>
+<td align="left">高度</td>
+<td align="left">视口的纵向像素数</td>
+<td align="left"><code>height=600</code> 表示视口高 600 像素</td>
+</tr>
+</tbody></table>
+<h3 id="1-1-5-2D的平移缩放"><a href="#1-1-5-2D的平移缩放" class="headerlink" title="1.1.5 2D的平移缩放"></a>1.1.5 2D的平移缩放</h3><p><img src="C:\Users\czpjoe\AppData\Roaming\Typora\typora-user-images\image-20250530130947309.png" alt="image-20250530130947309"></p>
+<h1 id="2-Cesium-ScreenSpaceEventHandle"><a href="#2-Cesium-ScreenSpaceEventHandle" class="headerlink" title="2 Cesium ScreenSpaceEventHandle"></a>2 Cesium ScreenSpaceEventHandle</h1><p>**Cesium.defined()**是 Cesium 中一个常用的实用函数，用于检查变量是否已定义且不为 <code>null</code> 或 <code>undefined</code>。</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">Cesium.defined(value)</span><br></pre></td></tr></table></figure>
+
+<p>​	注册这个实用类</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br></pre></td><td class="code"><pre><span class="line">new Cesium.ScreenSpaceEventHandler(element)</span><br></pre></td></tr></table></figure>
+
+<p>setInputAction(action, type, modifier)</p>
+<p>设置输入事件的处理函数。</p>
+<table>
+<thead>
+<tr>
+<th align="left">参数</th>
+<th align="left">类型</th>
+<th align="left">描述</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left">action</td>
+<td align="left">各种事件回调</td>
+<td align="left">事件处理函数</td>
+</tr>
+<tr>
+<td align="left">type</td>
+<td align="left">ScreenSpaceEventType</td>
+<td align="left">输入事件类型</td>
+</tr>
+<tr>
+<td align="left">modifier</td>
+<td align="left">KeyboardEventModifier</td>
+<td align="left">修饰键</td>
+</tr>
+</tbody></table>
+<p><strong>事件类型对照表</strong></p>
+<table>
+<thead>
+<tr>
+<th align="left">事件类型</th>
+<th align="left">描述</th>
+<th align="left">回调参数</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left"><code>LEFT_CLICK</code></td>
+<td align="left">左键点击</td>
+<td align="left"><code>PositionedEvent</code></td>
+</tr>
+<tr>
+<td align="left"><code>MOUSE_MOVE</code></td>
+<td align="left">鼠标移动</td>
+<td align="left"><code>MotionEvent</code></td>
+</tr>
+<tr>
+<td align="left"><code>WHEEL</code></td>
+<td align="left">滚轮滚动</td>
+<td align="left"><code>delta</code> (数值)</td>
+</tr>
+<tr>
+<td align="left"><code>PINCH_START</code></td>
+<td align="left">双指开始</td>
+<td align="left"><code>TwoPointEvent</code></td>
+</tr>
+<tr>
+<td align="left"><code>PINCH_MOVE</code></td>
+<td align="left">双指移动</td>
+<td align="left"><code>TwoPointMotionEvent</code></td>
+</tr>
+</tbody></table>
+<h1 id="3-Cesium-Camrea"><a href="#3-Cesium-Camrea" class="headerlink" title="3 Cesium.Camrea()"></a>3 Cesium.Camrea()</h1><figure class="highlight js"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br></pre></td><td class="code"><pre><span class="line">camera.<span class="title function_">setView</span>(&#123;</span><br><span class="line">  <span class="attr">destination</span>: <span class="title class_">Cesium</span>.<span class="property">Cartesian3</span>.<span class="title function_">fromDegrees</span>(<span class="number">117.16</span>, <span class="number">34.21</span>, <span class="number">1500.0</span>), <span class="comment">// 经纬度 + 高度（米）</span></span><br><span class="line">  <span class="attr">orientation</span>: &#123;</span><br><span class="line">    <span class="attr">heading</span>: <span class="title class_">Cesium</span>.<span class="property">Math</span>.<span class="title function_">toRadians</span>(<span class="number">0.0</span>),   <span class="comment">// 朝向正北</span></span><br><span class="line">    <span class="attr">pitch</span>: <span class="title class_">Cesium</span>.<span class="property">Math</span>.<span class="title function_">toRadians</span>(-<span class="number">45.0</span>),   <span class="comment">// 向下看 45 度</span></span><br><span class="line">    <span class="attr">roll</span>: <span class="number">0.0</span></span><br><span class="line">  &#125;</span><br><span class="line">&#125;);</span><br><span class="line"></span><br></pre></td></tr></table></figure>
+
+<p><code>destination</code>: 摄像机目标点位置（<code>Cartesian3</code>）</p>
+<p>这个就是相机的View矩阵</p>
+<p><code>orientation</code>: 视角</p>
+<ul>
+<li><code>heading</code>：绕地球垂直轴旋转（相当于左右转）</li>
+<li><code>pitch</code>：绕摄像机右方向旋转（相当于上下转）</li>
+<li><code>roll</code>：绕摄像机前方向旋转（通常为 0）</li>
+</ul>
+<h3 id="3-1-正交相机"><a href="#3-1-正交相机" class="headerlink" title="3.1 正交相机"></a>3.1 正交相机</h3><p>正交投影与相机位置，相当于给了一个空间，可以看物体的全貌。</p>
+<p><img src="C:\Users\czpjoe\AppData\Roaming\Typora\typora-user-images\image-20250613175314749.png">c</p>
+<p>Cesium实现的具体过程</p>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br><span class="line">28</span><br><span class="line">29</span><br><span class="line">30</span><br><span class="line">31</span><br></pre></td><td class="code"><pre><span class="line"><span class="title function_">createOrthCamera</span>(<span class="params"></span>)&#123;</span><br><span class="line">    <span class="comment">//初始化正交相机</span></span><br><span class="line">    <span class="keyword">const</span> camera = <span class="keyword">new</span> <span class="title class_">Cesium</span>.<span class="title class_">Camera</span>(viewer.<span class="property">scene</span>)</span><br><span class="line">    <span class="comment">//设置正交视锥体</span></span><br><span class="line">    camera.<span class="property">frustum</span> = <span class="keyword">new</span> <span class="title class_">Cesium</span>.<span class="title class_">OrthographicOffCenterFrustum</span>()</span><br><span class="line">     <span class="keyword">const</span> [lon,lat] = <span class="variable language_">this</span>.<span class="property">config</span>.<span class="property">lonLat</span></span><br><span class="line">    <span class="keyword">const</span> center = <span class="title class_">Cesium</span>.<span class="property">Cartesian3</span>.<span class="title function_">fromDegrees</span>(lon,lat,<span class="number">0</span>)</span><br><span class="line">    <span class="comment">//获取ENU变化矩阵</span></span><br><span class="line">    <span class="keyword">const</span> enuMatrix = <span class="title class_">Cesium</span>.<span class="property">Transforms</span>.<span class="title function_">eastNorthUpToFixedFrame</span>(center);</span><br><span class="line">    <span class="keyword">const</span> frustum = camera.<span class="property">frustum</span></span><br><span class="line">    <span class="keyword">const</span> frustum = camera.<span class="property">frustum</span>;</span><br><span class="line">    frustum.<span class="property">near</span> = <span class="number">0.01</span>;</span><br><span class="line">    frustum.<span class="property">far</span> = <span class="variable language_">this</span>.<span class="property">config</span>.<span class="property">dimensions</span>.<span class="property">z</span> * <span class="number">2</span>;</span><br><span class="line">    frustum.<span class="property">left</span> = -<span class="variable language_">this</span>.<span class="property">config</span>.<span class="property">dimensions</span>.<span class="property">x</span> / <span class="number">2</span>;</span><br><span class="line">    frustum.<span class="property">right</span> = <span class="variable language_">this</span>.<span class="property">config</span>.<span class="property">dimensions</span>.<span class="property">x</span> / <span class="number">2</span>;</span><br><span class="line">    frustum.<span class="property">bottom</span> = -<span class="variable language_">this</span>.<span class="property">config</span>.<span class="property">dimensions</span>.<span class="property">y</span> / <span class="number">2</span>;</span><br><span class="line">    frustum.<span class="property">top</span> = <span class="variable language_">this</span>.<span class="property">config</span>.<span class="property">dimensions</span>.<span class="property">y</span> / <span class="number">2</span>;</span><br><span class="line">    <span class="comment">//设置相机姿态</span></span><br><span class="line">    <span class="keyword">const</span> dir = <span class="title class_">Cesium</span>.<span class="property">Matrix4</span>.<span class="title function_">getColumn</span>(enuMatrix, <span class="number">2</span>, <span class="keyword">new</span> <span class="title class_">Cesium</span>.<span class="title class_">Cartesian3</span>()); <span class="comment">// Z轴向量</span></span><br><span class="line">    <span class="title class_">Cesium</span>.<span class="property">Cartesian3</span>.<span class="title function_">negate</span>(dir, dir); <span class="comment">// 向下</span></span><br><span class="line">    <span class="keyword">const</span> up = <span class="title class_">Cesium</span>.<span class="property">Matrix4</span>.<span class="title function_">getColumn</span>(enuMatrix, <span class="number">1</span>, <span class="keyword">new</span> <span class="title class_">Cesium</span>.<span class="title class_">Cartesian3</span>()); <span class="comment">// 北为上</span></span><br><span class="line">    <span class="keyword">const</span> right = <span class="title class_">Cesium</span>.<span class="property">Matrix4</span>.<span class="title function_">getColumn</span>(enuMatrix, <span class="number">0</span>, <span class="keyword">new</span> <span class="title class_">Cesium</span>.<span class="title class_">Cartesian3</span>()); <span class="comment">// 东为右</span></span><br><span class="line">    <span class="comment">//设置相机的位置与朝向</span></span><br><span class="line">    <span class="keyword">const</span> offset = <span class="title class_">Cesium</span>.<span class="property">Cartesian3</span>.<span class="title function_">multiplyByScalar</span>(dir, -frustum.<span class="property">far</span>, <span class="keyword">new</span> <span class="title class_">Cesium</span>.<span class="title class_">Cartesian3</span>());</span><br><span class="line">    camera.<span class="property">position</span> = <span class="title class_">Cesium</span>.<span class="property">Cartesian3</span>.<span class="title function_">add</span>(center, offset, <span class="keyword">new</span> <span class="title class_">Cesium</span>.<span class="title class_">Cartesian3</span>());</span><br><span class="line">    camera.<span class="property">direction</span> = dir;</span><br><span class="line">    camera.<span class="property">up</span> = up;</span><br><span class="line">    camera.<span class="property">right</span> = right;</span><br><span class="line">    <span class="keyword">return</span> camera;</span><br><span class="line">    </span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+
+
+<h1 id="4GLSL着色器语言（UV-坐标系，原点在左下角）"><a href="#4GLSL着色器语言（UV-坐标系，原点在左下角）" class="headerlink" title="4GLSL着色器语言（UV 坐标系，原点在左下角）"></a>4GLSL着色器语言（<strong>UV 坐标系</strong>，原点在<strong>左下角</strong>）</h1><h2 id="4-1声明常量与变量、"><a href="#4-1声明常量与变量、" class="headerlink" title="4.1声明常量与变量、"></a>4.1声明常量与变量、</h2><p><strong>声明变量</strong></p>
+<figure class="highlight glsl"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 着色器语言定义一个整形常量</span></span><br><span class="line"><span class="type">int</span> count = <span class="number">10</span>;</span><br><span class="line"><span class="comment">// 定义一个浮点数变量num，并赋值10.0</span></span><br><span class="line"><span class="type">float</span> num = <span class="number">10.0</span>;</span><br><span class="line"><span class="comment">// 定义一个三维向量vec3</span></span><br><span class="line"><span class="type">vec3</span> direction = <span class="type">vec3</span>(<span class="number">1.0</span>,<span class="number">0.5</span>,<span class="number">0.6</span>);</span><br><span class="line"><span class="comment">// 声明一个数据类型是布尔值的变量，并赋值为true</span></span><br><span class="line"><span class="type">bool</span> lightBool = <span class="literal">true</span>;</span><br></pre></td></tr></table></figure>
+
+<p>声明常量</p>
+<figure class="highlight glsl"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 着色器语言定义一个整形常量</span></span><br><span class="line"><span class="keyword">const</span> <span class="type">int</span> count = <span class="number">10</span>;</span><br><span class="line"><span class="comment">// 定义一个浮点数常量10.0</span></span><br><span class="line"><span class="keyword">const</span> <span class="type">float</span> count = <span class="number">10.0</span>;</span><br><span class="line"><span class="comment">// 定义一个三维向量vec3常量,表示方向等量</span></span><br><span class="line"><span class="keyword">const</span> <span class="type">vec3</span> direction = vec(<span class="number">1.0</span>,<span class="number">0.5</span>,<span class="number">0.6</span>);</span><br></pre></td></tr></table></figure>
+
+<h2 id="4-2数据类型"><a href="#4-2数据类型" class="headerlink" title="4.2数据类型"></a>4.2数据类型</h2><h3 id="常见数据类型"><a href="#常见数据类型" class="headerlink" title="常见数据类型"></a>常见数据类型</h3><table>
+<thead>
+<tr>
+<th>bool</th>
+<th>布尔值</th>
+<th>布尔变量值为true或false</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>int</td>
+<td>整型数</td>
+<td>值为整数，比如0,1,2,3…</td>
+</tr>
+<tr>
+<td>float</td>
+<td>单精度浮点数</td>
+<td>浮点数用小数点表示，比如0.6,3.14,2.8</td>
+</tr>
+</tbody></table>
+<h3 id="矢量和向量"><a href="#矢量和向量" class="headerlink" title="矢量和向量"></a>矢量和向量</h3><table>
+<thead>
+<tr>
+<th align="left">关键字</th>
+<th align="left">数据类型</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left">vec2</td>
+<td align="left">二维向量，具有xy两个分量，分量是浮点数</td>
+</tr>
+<tr>
+<td align="left">vec3</td>
+<td align="left">三维向量 ，具有xyz三个分量，分量是浮点数</td>
+</tr>
+<tr>
+<td align="left">vec4</td>
+<td align="left">四维向量 ，具有xyzw四个分量，分量是浮点数</td>
+</tr>
+<tr>
+<td align="left">ivec2</td>
+<td align="left">二维向量，分量是整型数</td>
+</tr>
+<tr>
+<td align="left">ivec3</td>
+<td align="left">三维向量 ，分量是整型数</td>
+</tr>
+<tr>
+<td align="left">ivec4</td>
+<td align="left">四维向量 ，分量是整型数</td>
+</tr>
+<tr>
+<td align="left">bvec2</td>
+<td align="left">二维向量，分量是布尔值bool</td>
+</tr>
+<tr>
+<td align="left">bvec3</td>
+<td align="left">三维向量 ，分量是布尔值bool</td>
+</tr>
+<tr>
+<td align="left">bvec4</td>
+<td align="left">四维向量 ，分量是布尔值bool</td>
+</tr>
+</tbody></table>
+<h4 id="访问获取向量分量"><a href="#访问获取向量分量" class="headerlink" title="访问获取向量分量"></a>访问获取向量分量</h4><table>
+<thead>
+<tr>
+<th align="left">向量vector</th>
+<th align="left">访问</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left">第1个分量</td>
+<td align="left">vector.x</td>
+</tr>
+<tr>
+<td align="left">第2个分量</td>
+<td align="left">vector.y</td>
+</tr>
+<tr>
+<td align="left">第3个分量</td>
+<td align="left">vector.z</td>
+</tr>
+<tr>
+<td align="left">第4个分量</td>
+<td align="left">vector.w</td>
+</tr>
+</tbody></table>
+<figure class="highlight glsl"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 声明一个三维向量，假设向量表示三维坐标中一个位置坐标</span></span><br><span class="line"><span class="type">vec3</span> pos = <span class="type">vec3</span>(<span class="number">10.2</span>,<span class="number">9.6</span>,<span class="number">3.9</span>);</span><br><span class="line"><span class="comment">// 三维向量pos的x分量被改变，相当于在原来的基础上沿着x轴平移2.0</span></span><br><span class="line">pos.x = pos.x+<span class="number">2.0</span>;</span><br><span class="line"><span class="comment">// 直接改变三维向量的x分量，相当于把顶点的x坐标值直接设置为20.0</span></span><br><span class="line">pos.x = <span class="number">20.0</span>;</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight glsl"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 声明一个三维向量变量，并赋值</span></span><br><span class="line"><span class="type">vec3</span> v3 = <span class="type">vec3</span>(<span class="number">10.0</span>,<span class="number">9.0</span>,<span class="number">3.0</span>);</span><br><span class="line"><span class="comment">// 声明一个二维向量</span></span><br><span class="line"><span class="type">vec2</span> v2;</span><br><span class="line"><span class="comment">// 提取向量v3的xy两个分量赋值给二维向量v2</span></span><br><span class="line">v2 = v3.xy;<span class="comment">//v3.xy相等于vec2(10.0,9.0);</span></span><br><span class="line"><span class="comment">// v3的x分量赋值给v2的x分量，v3的z分量赋值给v2的y分量</span></span><br><span class="line">v2 = v3.xz;<span class="comment">//获得zx分量  v3.xz等价于vec2(10.0,3.0)</span></span><br><span class="line">v2 = v3.yz;<span class="comment">//获得yz分量</span></span><br><span class="line"><span class="comment">//获得zx分量 v3的z分量赋值给v2的x分量，v3的x分量赋值给v2的y分量</span></span><br><span class="line">v2 = v3.zx;</span><br></pre></td></tr></table></figure>
+
+
+
+<h3 id="矩阵"><a href="#矩阵" class="headerlink" title="矩阵"></a>矩阵</h3><p>注意行列对应关系，按照列的先后顺序，从上到下依次传入mat构造函数参数中。</p>
+<figure class="highlight glsl"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 需要表示的矩阵</span></span><br><span class="line"><span class="comment">// 1.1 1.2 1.3 1.4</span></span><br><span class="line"><span class="comment">// 2.1 2.2 2.3 2.4</span></span><br><span class="line"><span class="comment">// 3.1 3.2 3.3 3.4</span></span><br><span class="line"><span class="comment">// 4.1 4.2 4.3 4.4</span></span><br><span class="line"><span class="type">mat4</span> matrix4 = <span class="type">mat4</span>(</span><br><span class="line"><span class="number">1.1</span>,<span class="number">2.1</span>,<span class="number">3.1</span>,<span class="number">4.1</span>,</span><br><span class="line"><span class="number">1.2</span>,<span class="number">2.2</span>,<span class="number">3.2</span>,<span class="number">4.2</span>,</span><br><span class="line"><span class="number">1.3</span>,<span class="number">2.3</span>,<span class="number">3.3</span>,<span class="number">4.3</span>,</span><br><span class="line"><span class="number">1.4</span>,<span class="number">2.4</span>,<span class="number">3.4</span>,<span class="number">4.4</span></span><br><span class="line">);</span><br></pre></td></tr></table></figure>
+
+<p><code>mat4(2.0)</code>写法快速创建一个4x4对角矩阵</p>
+<figure class="highlight glsl"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">mat4</span> matrix4 = <span class="type">mat4</span>(</span><br><span class="line"><span class="number">1.1</span>,<span class="number">2.1</span>,<span class="number">3.1</span>,<span class="number">4.1</span>,</span><br><span class="line"><span class="number">1.2</span>,<span class="number">2.2</span>,<span class="number">3.2</span>,<span class="number">4.2</span>,</span><br><span class="line"><span class="number">1.3</span>,<span class="number">2.3</span>,<span class="number">3.3</span>,<span class="number">4.3</span>,</span><br><span class="line"><span class="number">1.4</span>,<span class="number">2.4</span>,<span class="number">3.4</span>,<span class="number">4.4</span></span><br><span class="line">);</span><br><span class="line"><span class="comment">// 访问矩阵matrix4的第二列</span></span><br><span class="line"><span class="type">vec4</span> v4 = matrix4[<span class="number">1</span>];<span class="comment">//返回值vec4(1.2,2.2,3.2,4.2)</span></span><br><span class="line"><span class="comment">// 访问矩阵matrix4的第三列第四行对应的元素</span></span><br><span class="line"><span class="type">float</span> f = matrix4[<span class="number">2</span>][<span class="number">3</span>];<span class="comment">//返回4.3</span></span><br></pre></td></tr></table></figure>
+
+<h2 id="4-3内置变量"><a href="#4-3内置变量" class="headerlink" title="4.3内置变量"></a>4.3内置变量</h2><p>普通变量，着色器语言和javascript语言一样需要先声明后使用，所谓内置变量就是不用声明可以直接赋值，主要是为了实现特定的功能。</p>
+<table>
+<thead>
+<tr>
+<th align="left">内置变量</th>
+<th align="left">含义</th>
+<th align="left">值数据类型</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left">gl_PointSize</td>
+<td align="left">点渲染模式，方形点区域渲染像素大小</td>
+<td align="left">float</td>
+</tr>
+<tr>
+<td align="left">gl_Position</td>
+<td align="left">顶点位置坐标</td>
+<td align="left">vec4</td>
+</tr>
+<tr>
+<td align="left">gl_FragColor</td>
+<td align="left">片元颜色值</td>
+<td align="left">vec4</td>
+</tr>
+<tr>
+<td align="left">gl_FragCoord</td>
+<td align="left">片元坐标，单位像素</td>
+<td align="left">vec2</td>
+</tr>
+<tr>
+<td align="left">gl_PointCoord</td>
+<td align="left">点渲染模式对应点像素坐标</td>
+<td align="left">vec2</td>
+</tr>
+</tbody></table>
+<h3 id="gl-PointSize"><a href="#gl-PointSize" class="headerlink" title="gl_PointSize"></a><code>gl_PointSize</code></h3><p>当WebGL执行绘制函数<code>gl.drawArrays()</code>绘制模式是点模式<code>gl.POINTS</code>的时候，顶点着色器语言<code>main</code>函数中才会用到内置变量<code>gl_PointSize</code>，使用内置变量<code>gl_PointSize</code>主要是用来设置顶点渲染出来的方形点像素大小。</p>
+<figure class="highlight glsl"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line"><span class="type">void</span> main() &#123;</span><br><span class="line">  <span class="comment">//给内置变量gl_PointSize赋值像素大小，注意值是浮点数</span></span><br><span class="line">  <span class="built_in">gl_PointSize</span>=<span class="number">20.0</span>;</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<h3 id="gl-FragColor"><a href="#gl-FragColor" class="headerlink" title="gl_FragColor"></a><code>gl_FragColor</code></h3><p><code>gl_FragColor</code>内置变量主要用来设置片元像素的颜色，出现的位置是片元着色器语言的<code>main</code>函数中。</p>
+<p>内置变量<code>gl_FragColor</code>的值是四维向量<code>vec4(r,g,b,a)</code>,前三个参数表示片元像素颜色值RGB，第四个参数是片元像素透明度A，<code>1.0</code>表示不透明,<code>0.0</code>表示完全透明</p>
+<figure class="highlight plaintext"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br></pre></td><td class="code"><pre><span class="line">void main() &#123;</span><br><span class="line">    // 片元沿着x方向渐变</span><br><span class="line">    gl_FragColor = vec4(gl_FragCoord.x/500.0*1.0,1.0,0.0,1.0);</span><br><span class="line">  &#125;</span><br></pre></td></tr></table></figure>
+
+
+
+<h1 id="5Cesium-PostProcessStage"><a href="#5Cesium-PostProcessStage" class="headerlink" title="5Cesium.PostProcessStage"></a>5Cesium.PostProcessStage</h1><p><code>Cesium.PostProcessStage</code> 允许你通过 GLSL 片元着色器对渲染后的图像做进一步处理。</p>
+<figure class="highlight glsl"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br></pre></td><td class="code"><pre><span class="line"><span class="keyword">const</span> myStage = new Cesium.PostProcessStage(&#123;</span><br><span class="line">  name: &#x27;myCustomStage&#x27;,</span><br><span class="line">  fragmentShader: &#x27;<span class="keyword">uniform</span> <span class="type">sampler2D</span> colorTexture; <span class="keyword">varying</span> <span class="type">vec2</span> v_textureCoordinates; <span class="type">void</span> main() &#123; <span class="built_in">gl_FragColor</span> = <span class="built_in">texture2D</span>(colorTexture, v_textureCoordinates); &#125;&#x27;,</span><br><span class="line">  uniforms: &#123;</span><br><span class="line">    myParam: <span class="number">0.5</span></span><br><span class="line">  &#125;</span><br><span class="line">&#125;);</span><br><span class="line"><span class="comment">// 接收插值后的纹理坐标</span></span><br><span class="line"><span class="keyword">varying</span> <span class="type">vec2</span> v_TexCoord;</span><br><span class="line"><span class="comment">// 纹理图片像素数据</span></span><br><span class="line"><span class="keyword">uniform</span> <span class="type">sampler2D</span> u_Sampler;</span><br><span class="line"><span class="type">void</span> main() &#123;</span><br><span class="line">  <span class="comment">// 采集纹素，逐片元赋值像素值</span></span><br><span class="line">  <span class="built_in">gl_FragColor</span> = <span class="built_in">texture2D</span>(u_Sampler,v_TexCoord);</span><br><span class="line">&#125;</span><br></pre></td></tr></table></figure>
+
+<table>
+<thead>
+<tr>
+<th>参数名</th>
+<th>类型</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>name</code></td>
+<td><code>String</code></td>
+<td>后处理阶段的名字，必须唯一。</td>
+</tr>
+<tr>
+<td><code>fragmentShader</code></td>
+<td><code>String</code></td>
+<td>GLSL 片元着色器代码，用于定义后处理逻辑。</td>
+</tr>
+<tr>
+<td><code>uniforms</code></td>
+<td><code>Object</code>（可选）</td>
+<td>传入 shader 的 uniform 参数，可以是常数、函数或者 Cesium 的回调函数。</td>
+</tr>
+<tr>
+<td><code>textureScale</code></td>
+<td><code>Number</code>（可选）</td>
+<td>用于降低处理图像的分辨率（节省性能），1 表示全分辨率。</td>
+</tr>
+<tr>
+<td><code>sampleMode</code></td>
+<td><code>Cesium.PostProcessStageSampleMode</code>（可选）</td>
+<td>默认是 <code>NEAREST</code>。可设为 <code>LINEAR</code> 实现更平滑的采样。</td>
+</tr>
+</tbody></table>
+<h1 id="6-Cesium-Primitive"><a href="#6-Cesium-Primitive" class="headerlink" title="6 Cesium.Primitive()"></a>6 Cesium.Primitive()</h1><p>图元表示 中的几何体<a target="_blank" rel="noopener" href="https://cesium.com/learn/cesiumjs/ref-doc/Scene.html"><code>Scene</code></a>。几何体可以来自单个<a target="_blank" rel="noopener" href="https://cesium.com/learn/cesiumjs/ref-doc/GeometryInstance.html"><code>GeometryInstance</code></a> （如下面的示例 1 所示），也可以来自实例数组，即使几何体来自不同的几何类型，例如，一个<a target="_blank" rel="noopener" href="https://cesium.com/learn/cesiumjs/ref-doc/RectangleGeometry.html"><code>RectangleGeometry</code></a>和一个<a target="_blank" rel="noopener" href="https://cesium.com/learn/cesiumjs/ref-doc/EllipsoidGeometry.html"><code>EllipsoidGeometry</code></a>（如代码示例 2 所示）。</p>
+<p>基元将几何体实例与<a target="_blank" rel="noopener" href="https://cesium.com/learn/cesiumjs/ref-doc/Appearance.html"><code>Appearance</code></a>描述完整着色（包括 <a target="_blank" rel="noopener" href="https://cesium.com/learn/cesiumjs/ref-doc/Material.html"><code>Material</code></a>和 ）的 组合在一起<code>RenderState</code>。粗略地说，几何体实例定义了结构和位置，而外观定义了视觉特性。将几何体和外观解耦使我们能够混合搭配大多数几何体，并独立地添加新的几何体或外观。</p>
+<p>将多个实例组合成一个基元称为批处理，这可以显著提高静态数据的性能。可以单独挑选实例；<a target="_blank" rel="noopener" href="https://cesium.com/learn/cesiumjs/ref-doc/Scene.html#pick"><code>Scene#pick</code></a>返回它们的<a target="_blank" rel="noopener" href="https://cesium.com/learn/cesiumjs/ref-doc/GeometryInstance.html#id"><code>GeometryInstance#id</code></a>。使用类似 的实例外观<a target="_blank" rel="noopener" href="https://cesium.com/learn/cesiumjs/ref-doc/PerInstanceColorAppearance.html"><code>PerInstanceColorAppearance</code></a>，每个实例还可以拥有独特的颜色。</p>
+<p><a target="_blank" rel="noopener" href="https://cesium.com/learn/cesiumjs/ref-doc/Geometry.html"><code>Geometry</code></a>可以在 Web Worker 或主线程上创建和批处理。前两个示例展示了如何在 Web Worker 上使用几何体描述创建几何体。第三个示例展示了如何通过显式调用<code>createGeometry</code>方法在主线程上创建几何体。</p>
+<table>
+<thead>
+<tr>
+<th align="left">名称</th>
+<th align="left">类型</th>
+<th>默认值</th>
+<th>描述</th>
+</tr>
+</thead>
+<tbody><tr>
+<td align="left"><strong>geometryInstances</strong></td>
+<td align="left"><code>GeometryInstance[]</code> | <code>GeometryInstance</code></td>
+<td>—</td>
+<td>选填，要渲染的几何实例（或单个几何实例）。</td>
+</tr>
+<tr>
+<td align="left"><strong>appearance</strong></td>
+<td align="left"><code>Appearance</code></td>
+<td>—</td>
+<td>选填，用于渲染图元的外观。</td>
+</tr>
+<tr>
+<td align="left"><strong>depthFailAppearance</strong></td>
+<td align="left"><code>Appearance</code></td>
+<td>—</td>
+<td>选填，当深度测试失败时，用于遮蔽该图元的外观。</td>
+</tr>
+<tr>
+<td align="left"><strong>show</strong></td>
+<td align="left"><code>Boolean</code></td>
+<td><code>true</code></td>
+<td>选填，是否显示该图元。</td>
+</tr>
+<tr>
+<td align="left"><strong>modelMatrix</strong></td>
+<td align="left"><code>Matrix4</code></td>
+<td><code>Matrix4.IDENTITY</code></td>
+<td>选填，将图元（所有几何实例）从模型变换到世界坐标的 4x4 变换矩阵。</td>
+</tr>
+<tr>
+<td align="left"><strong>vertexCacheOptimize</strong></td>
+<td align="left"><code>Boolean</code></td>
+<td><code>false</code></td>
+<td>选填，当为 <code>true</code> 时，几何顶点针对前后顶点着色器缓存进行优化。</td>
+</tr>
+<tr>
+<td align="left"><strong>interleave</strong></td>
+<td align="left"><code>Boolean</code></td>
+<td><code>false</code></td>
+<td>选填，当为 <code>true</code> 时，几何顶点属性交错排列，可略微提升渲染性能但增加加载时间。</td>
+</tr>
+<tr>
+<td align="left"><strong>compressVertices</strong></td>
+<td align="left"><code>Boolean</code></td>
+<td><code>true</code></td>
+<td>选填，当为 <code>true</code> 时，几何顶点被压缩以节省内存。</td>
+</tr>
+<tr>
+<td align="left"><strong>releaseGeometryInstances</strong></td>
+<td align="left"><code>Boolean</code></td>
+<td><code>true</code></td>
+<td>选填，当为 <code>true</code> 时，原语不保留对输入 <code>geometryInstances</code> 的引用以节省内存。</td>
+</tr>
+<tr>
+<td align="left"><strong>allowPicking</strong></td>
+<td align="left"><code>Boolean</code></td>
+<td><code>true</code></td>
+<td>选填，当为 <code>true</code> 时，每个几何实例可通过 <code>Scene#pick</code> 拾取；为 <code>false</code> 时可节省 GPU 内存。</td>
+</tr>
+<tr>
+<td align="left"><strong>cull</strong></td>
+<td align="left"><code>Boolean</code></td>
+<td><code>true</code></td>
+<td>选填，当为 <code>true</code> 时，渲染器视锥会根据图元的边界体积进行剔除；若你手动剔除图元，可设为 <code>false</code> 提升性能。</td>
+</tr>
+<tr>
+<td align="left"><strong>asynchronous</strong></td>
+<td align="left"><code>Boolean</code></td>
+<td><code>true</code></td>
+<td>选填，确定是否异步创建原语或阻塞直到准备好。</td>
+</tr>
+<tr>
+<td align="left"><strong>debugShowBoundingVolume</strong></td>
+<td align="left"><code>Boolean</code></td>
+<td><code>false</code></td>
+<td>选填，仅用于调试。是否显示此图元命令的边界球。</td>
+</tr>
+<tr>
+<td align="left"><strong>shadows</strong></td>
+<td align="left"><code>ShadowMode</code></td>
+<td><code>ShadowMode.DISABLED</code></td>
+<td>选填，确定该图元是否投射或接收来自光源的阴影。</td>
+</tr>
+</tbody></table>
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 1. Draw a translucent ellipse on the surface with a checkerboard pattern</span></span><br><span class="line"><span class="keyword">const</span> instance = <span class="keyword">new</span> <span class="title class_">Cesium</span>.<span class="title class_">GeometryInstance</span>(&#123;</span><br><span class="line">  geometry : <span class="keyword">new</span> <span class="title class_">Cesium</span>.<span class="title class_">EllipseGeometry</span>(&#123;</span><br><span class="line">      center : <span class="title class_">Cesium</span>.<span class="property">Cartesian3</span>.<span class="title function_">fromDegrees</span>(-<span class="number">100.0</span>, <span class="number">20.0</span>),</span><br><span class="line">      semiMinorAxis : <span class="number">500000.0</span>,</span><br><span class="line">      semiMajorAxis : <span class="number">1000000.0</span>,</span><br><span class="line">      rotation : <span class="title class_">Cesium</span>.<span class="property">Math</span>.<span class="property">PI_OVER_FOUR</span>,</span><br><span class="line">      vertexFormat : <span class="title class_">Cesium</span>.<span class="property">VertexFormat</span>.<span class="property">POSITION_AND_ST</span></span><br><span class="line">  &#125;),</span><br><span class="line">  id : <span class="string">&#x27;object returned when this instance is picked and to get/set per-instance attributes&#x27;</span></span><br><span class="line">&#125;);</span><br><span class="line">scene.<span class="property">primitives</span>.<span class="title function_">add</span>(<span class="keyword">new</span> <span class="title class_">Cesium</span>.<span class="title class_">Primitive</span>(&#123;</span><br><span class="line">  geometryInstances : instance,</span><br><span class="line">  appearance : <span class="keyword">new</span> <span class="title class_">Cesium</span>.<span class="title class_">EllipsoidSurfaceAppearance</span>(&#123;</span><br><span class="line">    material : <span class="title class_">Cesium</span>.<span class="property">Material</span>.<span class="title function_">fromType</span>(<span class="string">&#x27;Checkerboard&#x27;</span>)</span><br><span class="line">  &#125;)</span><br><span class="line">&#125;));</span><br></pre></td></tr></table></figure>
+
+<figure class="highlight javascript"><table><tr><td class="gutter"><pre><span class="line">1</span><br><span class="line">2</span><br><span class="line">3</span><br><span class="line">4</span><br><span class="line">5</span><br><span class="line">6</span><br><span class="line">7</span><br><span class="line">8</span><br><span class="line">9</span><br><span class="line">10</span><br><span class="line">11</span><br><span class="line">12</span><br><span class="line">13</span><br><span class="line">14</span><br><span class="line">15</span><br><span class="line">16</span><br><span class="line">17</span><br><span class="line">18</span><br><span class="line">19</span><br><span class="line">20</span><br><span class="line">21</span><br><span class="line">22</span><br><span class="line">23</span><br><span class="line">24</span><br><span class="line">25</span><br><span class="line">26</span><br><span class="line">27</span><br></pre></td><td class="code"><pre><span class="line"><span class="comment">// 2. Draw different instances each with a unique color</span></span><br><span class="line"><span class="keyword">const</span> rectangleInstance = <span class="keyword">new</span> <span class="title class_">Cesium</span>.<span class="title class_">GeometryInstance</span>(&#123;</span><br><span class="line">  geometry : <span class="keyword">new</span> <span class="title class_">Cesium</span>.<span class="title class_">RectangleGeometry</span>(&#123;</span><br><span class="line">    rectangle : <span class="title class_">Cesium</span>.<span class="property">Rectangle</span>.<span class="title function_">fromDegrees</span>(-<span class="number">140.0</span>, <span class="number">30.0</span>, -<span class="number">100.0</span>, <span class="number">40.0</span>),</span><br><span class="line">    vertexFormat : <span class="title class_">Cesium</span>.<span class="property">PerInstanceColorAppearance</span>.<span class="property">VERTEX_FORMAT</span></span><br><span class="line">  &#125;),</span><br><span class="line">  id : <span class="string">&#x27;rectangle&#x27;</span>,</span><br><span class="line">  attributes : &#123;</span><br><span class="line">    color : <span class="keyword">new</span> <span class="title class_">Cesium</span>.<span class="title class_">ColorGeometryInstanceAttribute</span>(<span class="number">0.0</span>, <span class="number">1.0</span>, <span class="number">1.0</span>, <span class="number">0.5</span>)</span><br><span class="line">  &#125;</span><br><span class="line">&#125;);</span><br><span class="line"><span class="keyword">const</span> ellipsoidInstance = <span class="keyword">new</span> <span class="title class_">Cesium</span>.<span class="title class_">GeometryInstance</span>(&#123;</span><br><span class="line">  geometry : <span class="keyword">new</span> <span class="title class_">Cesium</span>.<span class="title class_">EllipsoidGeometry</span>(&#123;</span><br><span class="line">    radii : <span class="keyword">new</span> <span class="title class_">Cesium</span>.<span class="title class_">Cartesian3</span>(<span class="number">500000.0</span>, <span class="number">500000.0</span>, <span class="number">1000000.0</span>),</span><br><span class="line">    vertexFormat : <span class="title class_">Cesium</span>.<span class="property">VertexFormat</span>.<span class="property">POSITION_AND_NORMAL</span></span><br><span class="line">  &#125;),</span><br><span class="line">  modelMatrix : <span class="title class_">Cesium</span>.<span class="property">Matrix4</span>.<span class="title function_">multiplyByTranslation</span>(<span class="title class_">Cesium</span>.<span class="property">Transforms</span>.<span class="title function_">eastNorthUpToFixedFrame</span>(</span><br><span class="line">    <span class="title class_">Cesium</span>.<span class="property">Cartesian3</span>.<span class="title function_">fromDegrees</span>(-<span class="number">95.59777</span>, <span class="number">40.03883</span>)), <span class="keyword">new</span> <span class="title class_">Cesium</span>.<span class="title class_">Cartesian3</span>(<span class="number">0.0</span>, <span class="number">0.0</span>, <span class="number">500000.0</span>), <span class="keyword">new</span> <span class="title class_">Cesium</span>.<span class="title class_">Matrix4</span>()),</span><br><span class="line">  id : <span class="string">&#x27;ellipsoid&#x27;</span>,</span><br><span class="line">  attributes : &#123;</span><br><span class="line">    color : <span class="title class_">Cesium</span>.<span class="property">ColorGeometryInstanceAttribute</span>.<span class="title function_">fromColor</span>(<span class="title class_">Cesium</span>.<span class="property">Color</span>.<span class="property">AQUA</span>)</span><br><span class="line">  &#125;</span><br><span class="line">&#125;);</span><br><span class="line">scene.<span class="property">primitives</span>.<span class="title function_">add</span>(<span class="keyword">new</span> <span class="title class_">Cesium</span>.<span class="title class_">Primitive</span>(&#123;</span><br><span class="line">  geometryInstances : [rectangleInstance, ellipsoidInstance],</span><br><span class="line">  appearance : <span class="keyword">new</span> <span class="title class_">Cesium</span>.<span class="title class_">PerInstanceColorAppearance</span>()</span><br><span class="line">&#125;));</span><br></pre></td></tr></table></figure>
+
+
+		</div>
+
+		
+		<div class="post-copyright-info w-full my-8 px-2 sm:px-6 md:px-8">
+			<div class="article-copyright-info-container">
+    <ul>
+        <li><strong>Title:</strong> Cesium</li>
+        <li><strong>Author:</strong> chenzp858</li>
+        <li><strong>Created at
+                :</strong> 2025-10-10 12:32:29</li>
+        
+            <li>
+                <strong>Updated at
+                    :</strong> 2025-10-12 21:18:25
+            </li>
+        
+        <li>
+            <strong>Link:</strong> https://redefine.ohevan.com/post/361b4ed7.html
+        </li>
+        <li>
+            <strong>
+                License:
+            </strong>
+            
+
+            
+                This work is licensed under <a class="license" target="_blank" rel="noopener" href="https://creativecommons.org/licenses/by-nc-sa/4.0">CC BY-NC-SA 4.0</a>.
+            
+        </li>
+    </ul>
+</div>
+
+		</div>
+		
+
+		
+
+		
+
+		
+		<div class="article-nav my-8 flex justify-between items-center px-2 sm:px-6 md:px-8">
+			
+			<div class="article-prev border-border-color shadow-redefine-flat shadow-shadow-color-2 rounded-medium px-4 py-2 hover:shadow-redefine-flat-hover hover:shadow-shadow-color-2">
+				<a class="prev" rel="prev" href="/post/560a971e.html">
+					<span class="left arrow-icon flex justify-center items-center">
+						<i class="fa-solid fa-chevron-left"></i>
+					</span>
+					<span class="title flex justify-center items-center">
+						<span class="post-nav-title-item truncate max-w-48">VUE</span>
+						<span class="post-nav-item">Prev posts</span>
+					</span>
+				</a>
+			</div>
+			
+			
+			<div class="article-next border-border-color shadow-redefine-flat shadow-shadow-color-2 rounded-medium px-4 py-2 hover:shadow-redefine-flat-hover hover:shadow-shadow-color-2">
+				<a class="next" rel="next" href="/post/aa9b66de.html">
+					<span class="title flex justify-center items-center">
+						<span class="post-nav-title-item truncate max-w-48">高光谱遥感</span>
+						<span class="post-nav-item">Next posts</span>
+					</span>
+					<span class="right arrow-icon flex justify-center items-center">
+						<i class="fa-solid fa-chevron-right"></i>
+					</span>
+				</a>
+			</div>
+			
+		</div>
+		
+
+
+		
+		<div class="comment-container px-2 sm:px-6 md:px-8 pb-8">
+			<div class="comments-container mt-10 w-full ">
+    <div id="comment-anchor" class="w-full h-2.5"></div>
+    <div class="comment-area-title w-full my-1.5 md:my-2.5 text-xl md:text-3xl font-bold">
+        Comments
+    </div>
+    
+
+        
+            
+    <div id="waline"></div>
+    <script type="module" data-swup-reload-script>
+      import { init } from '/js/libs/waline.mjs';
+
+      function loadWaline() {
+        init({
+          el: '#waline',
+          serverURL: 'https://example.example.com',
+          dark: 'body[class~="dark-mode"]',
+          reaction: false,
+          requiredMeta: ['nick', 'mail'],
+          emoji: [],
+                    lang: 'zh-CN',
+        });
+      }
+
+      if (typeof swup !== 'undefined') {
+        loadWaline();
+      } else {
+        window.addEventListener('DOMContentLoaded', loadWaline);
+      }
+    </script>
+
+
+
+        
+    
+</div>
+
+		</div>
+		
+	</div>
+
+	
+	<div class="toc-content-container">
+		<div class="post-toc-wrap">
+	<div class="post-toc">
+		<div class="toc-title">On this page</div>
+		<div class="page-title">Cesium</div>
+		<ol class="nav"><li class="nav-item nav-level-1"><a class="nav-link" href="#Cesium%E5%AD%A6%E4%B9%A0%E7%AC%94%E8%AE%B0"><span class="nav-text">Cesium学习笔记</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#1-1Cesium%E5%9D%90%E6%A0%87%E7%B3%BB%E9%97%AE%E9%A2%98"><span class="nav-text">1.1Cesium坐标系问题</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#1-1-1WGS84-%E5%9D%90%E6%A0%87%E7%B3%BB%EF%BC%88%E5%9C%B0%E7%90%86%E5%9D%90%E6%A0%87%E7%B3%BB%EF%BC%89"><span class="nav-text">1.1.1WGS84 坐标系（地理坐标系）</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#1-1-2%E5%9C%B0%E5%BF%83%E5%9C%B0%E5%9B%BA%E5%9D%90%E6%A0%87%E7%B3%BB%EF%BC%88ECEF%EF%BC%89%EF%BC%88%E9%87%8D%E8%A6%81%E7%9F%A5%E8%AF%86%E7%82%B9%EF%BC%89"><span class="nav-text">1.1.2地心地固坐标系（ECEF）（重要知识点）</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#1-1-3%E5%9B%9B%E5%85%83%E6%95%B0"><span class="nav-text">1.1.3四元数</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#1-1-4webgl%E7%9A%84%E5%9D%90%E6%A0%87%E7%B3%BB%E7%BB%9F"><span class="nav-text">1.1.4webgl的坐标系统</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#1-Cesium-WebGL-%E8%A7%86%E5%8F%A3%E5%9D%90%E6%A0%87%E7%B3%BB%E8%AF%A6%E8%A7%A3"><span class="nav-text">1. Cesium&#x2F;WebGL 视口坐标系详解</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#1-1-5-2D%E7%9A%84%E5%B9%B3%E7%A7%BB%E7%BC%A9%E6%94%BE"><span class="nav-text">1.1.5 2D的平移缩放</span></a></li></ol></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#2-Cesium-ScreenSpaceEventHandle"><span class="nav-text">2 Cesium ScreenSpaceEventHandle</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#3-Cesium-Camrea"><span class="nav-text">3 Cesium.Camrea()</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#3-1-%E6%AD%A3%E4%BA%A4%E7%9B%B8%E6%9C%BA"><span class="nav-text">3.1 正交相机</span></a></li></ol></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#4GLSL%E7%9D%80%E8%89%B2%E5%99%A8%E8%AF%AD%E8%A8%80%EF%BC%88UV-%E5%9D%90%E6%A0%87%E7%B3%BB%EF%BC%8C%E5%8E%9F%E7%82%B9%E5%9C%A8%E5%B7%A6%E4%B8%8B%E8%A7%92%EF%BC%89"><span class="nav-text">4GLSL着色器语言（UV 坐标系，原点在左下角）</span></a><ol class="nav-child"><li class="nav-item nav-level-2"><a class="nav-link" href="#4-1%E5%A3%B0%E6%98%8E%E5%B8%B8%E9%87%8F%E4%B8%8E%E5%8F%98%E9%87%8F%E3%80%81"><span class="nav-text">4.1声明常量与变量、</span></a></li><li class="nav-item nav-level-2"><a class="nav-link" href="#4-2%E6%95%B0%E6%8D%AE%E7%B1%BB%E5%9E%8B"><span class="nav-text">4.2数据类型</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#%E5%B8%B8%E8%A7%81%E6%95%B0%E6%8D%AE%E7%B1%BB%E5%9E%8B"><span class="nav-text">常见数据类型</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%9F%A2%E9%87%8F%E5%92%8C%E5%90%91%E9%87%8F"><span class="nav-text">矢量和向量</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#%E7%9F%A9%E9%98%B5"><span class="nav-text">矩阵</span></a></li></ol></li><li class="nav-item nav-level-2"><a class="nav-link" href="#4-3%E5%86%85%E7%BD%AE%E5%8F%98%E9%87%8F"><span class="nav-text">4.3内置变量</span></a><ol class="nav-child"><li class="nav-item nav-level-3"><a class="nav-link" href="#gl-PointSize"><span class="nav-text">gl_PointSize</span></a></li><li class="nav-item nav-level-3"><a class="nav-link" href="#gl-FragColor"><span class="nav-text">gl_FragColor</span></a></li></ol></li></ol></li><li class="nav-item nav-level-1"><a class="nav-link" href="#5Cesium-PostProcessStage"><span class="nav-text">5Cesium.PostProcessStage</span></a></li><li class="nav-item nav-level-1"><a class="nav-link" href="#6-Cesium-Primitive"><span class="nav-text">6 Cesium.Primitive()</span></a></li></ol>
+
+	</div>
+</div>
+	</div>
+	
+</div>
+			</div>
+
+			
+		</div>
+
+		<div class="main-content-footer">
+			<footer class="footer mt-5 py-5 h-auto text-base text-third-text-color relative border-t-2 border-t-border-color">
+    <div class="info-container py-3 text-center">
+        
+        <div class="text-center">
+            &copy;
+            
+              <span>2022</span>
+              -
+            
+            2025&nbsp;&nbsp;<i class="fa-solid fa-heart fa-beat" style="--fa-animation-duration: 0.5s; color: #f54545"></i>&nbsp;&nbsp;<a href="/">chenzp858</a>
+            
+                
+                <p class="post-count space-x-0.5">
+                    <span>
+                        6 posts in total
+                    </span>
+                    
+                </p>
+            
+        </div>
+        
+            <script data-swup-reload-script src="https://cn.vercount.one/js"></script>
+            <div class="relative text-center lg:absolute lg:right-[20px] lg:top-1/2 lg:-translate-y-1/2 lg:text-right">
+                
+                    <span id="busuanzi_container_site_uv" class="lg:!block">
+                        <span class="text-sm">VISITOR COUNT</span>
+                        <span id="busuanzi_value_site_uv"></span>
+                    </span>
+                
+                
+                    <span id="busuanzi_container_site_pv" class="lg:!block">
+                        <span class="text-sm">TOTAL PAGE VIEWS</span>
+                        <span id="busuanzi_value_site_pv"></span>
+                    </span>
+                
+            </div>
+        
+        <div class="relative text-center lg:absolute lg:left-[20px] lg:top-1/2 lg:-translate-y-1/2 lg:text-left">
+            <span class="lg:block text-sm">POWERED BY <?xml version="1.0" encoding="utf-8"?><!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd"><svg class="relative top-[2px] inline-block align-baseline" version="1.1" id="圖層_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px" width="1rem" height="1rem" viewBox="0 0 512 512" enable-background="new 0 0 512 512" xml:space="preserve"><path fill="#0E83CD" d="M256.4,25.8l-200,115.5L56,371.5l199.6,114.7l200-115.5l0.4-230.2L256.4,25.8z M349,354.6l-18.4,10.7l-18.6-11V275H200v79.6l-18.4,10.7l-18.6-11v-197l18.5-10.6l18.5,10.8V237h112v-79.6l18.5-10.6l18.5,10.8V354.6z"/></svg><a target="_blank" class="text-base" href="https://hexo.io">Hexo</a></span>
+            <span class="text-sm lg:block">THEME&nbsp;<a class="text-base" target="_blank" href="https://github.com/EvanNotFound/hexo-theme-redefine">Redefine v2.8.5</a></span>
+        </div>
+        
+        
+            <div>
+                Blog up for <span class="odometer" id="runtime_days" ></span> days <span class="odometer" id="runtime_hours"></span> hrs <span class="odometer" id="runtime_minutes"></span> Min <span class="odometer" id="runtime_seconds"></span> Sec
+            </div>
+        
+        
+            <script data-swup-reload-script>
+                try {
+                    function odometer_init() {
+                    const elements = document.querySelectorAll('.odometer');
+                    elements.forEach(el => {
+                        new Odometer({
+                            el,
+                            format: '( ddd).dd',
+                            duration: 200
+                        });
+                    });
+                    }
+                    odometer_init();
+                } catch (error) {}
+            </script>
+        
+        
+        
+    </div>  
+</footer>
+		</div>
+	</div>
+
+	
+	<div class="post-tools">
+		<div class="post-tools-container">
+	<ul class="article-tools-list">
+		<!-- TOC aside toggle -->
+		
+		<li class="right-bottom-tools page-aside-toggle">
+			<i class="fa-regular fa-outdent"></i>
+		</li>
+		
+
+		<!-- go comment -->
+		
+		<li class="go-comment">
+			<i class="fa-regular fa-comments"></i>
+		</li>
+		
+	</ul>
+</div>
+	</div>
+	
+
+	<div class="right-side-tools-container">
+		<div class="side-tools-container">
+	<ul class="hidden-tools-list">
+		<li class="right-bottom-tools tool-font-adjust-plus flex justify-center items-center">
+			<i class="fa-regular fa-magnifying-glass-plus"></i>
+		</li>
+
+		<li class="right-bottom-tools tool-font-adjust-minus flex justify-center items-center">
+			<i class="fa-regular fa-magnifying-glass-minus"></i>
+		</li>
+
+		<li class="right-bottom-tools tool-dark-light-toggle flex justify-center items-center">
+			<i class="fa-regular fa-moon"></i>
+		</li>
+
+		<!-- rss -->
+		
+
+		
+
+		<li class="right-bottom-tools tool-scroll-to-bottom flex justify-center items-center">
+			<i class="fa-regular fa-arrow-down"></i>
+		</li>
+	</ul>
+
+	<ul class="visible-tools-list">
+		<li class="right-bottom-tools toggle-tools-list flex justify-center items-center">
+			<i class="fa-regular fa-cog fa-spin"></i>
+		</li>
+		
+		<li class="right-bottom-tools tool-scroll-to-top flex justify-center items-center">
+			<i class="arrow-up fas fa-arrow-up"></i>
+			<span class="percent"></span>
+		</li>
+		
+		
+	</ul>
+</div>
+	</div>
+
+	<div class="image-viewer-container">
+	<img src="">
+</div>
+
+	
+
+</main>
+
+
+
+<script src="/js/build/libs/Swup.min.js"></script>
+
+<script src="/js/build/libs/SwupSlideTheme.min.js"></script>
+
+<script src="/js/build/libs/SwupScriptsPlugin.min.js"></script>
+
+<script src="/js/build/libs/SwupProgressPlugin.min.js"></script>
+
+<script src="/js/build/libs/SwupScrollPlugin.min.js"></script>
+
+<script src="/js/build/libs/SwupPreloadPlugin.min.js"></script>
+
+<script>
+    const swup = new Swup({
+        plugins: [
+            new SwupScriptsPlugin({
+                optin: true,
+            }),
+            new SwupProgressPlugin(),
+            new SwupScrollPlugin({
+                offset: 80,
+            }),
+            new SwupSlideTheme({
+                mainElement: ".main-content-body",
+            }),
+            new SwupPreloadPlugin(),
+        ],
+        containers: ["#swup"],
+    });
+</script>
+
+
+
+
+	
+<script src="/js/build/tools/imageViewer.js" type="module"></script>
+
+<script src="/js/build/utils.js" type="module"></script>
+
+<script src="/js/build/main.js" type="module"></script>
+
+<script src="/js/build/layouts/navbarShrink.js" type="module"></script>
+
+<script src="/js/build/tools/scrollTopBottom.js" type="module"></script>
+
+<script src="/js/build/tools/lightDarkSwitch.js" type="module"></script>
+
+<script src="/js/build/layouts/categoryList.js" type="module"></script>
+
+
+
+
+
+    
+<script src="/js/build/tools/codeBlock.js" type="module"></script>
+
+
+
+
+    
+<script src="/js/build/layouts/lazyload.js" type="module"></script>
+
+
+
+
+    
+<script src="/js/build/tools/runtime.js"></script>
+
+    
+<script src="/js/build/libs/odometer.min.js"></script>
+
+    
+<link rel="stylesheet" href="/assets/odometer-theme-minimal.css">
+
+
+
+
+  
+<script src="/js/build/libs/Typed.min.js"></script>
+
+  
+<script src="/js/build/plugins/typed.js" type="module"></script>
+
+
+
+
+
+
+
+
+    
+<script src="/js/build/libs/anime.min.js"></script>
+
+
+
+
+
+    
+<script src="/js/build/tools/tocToggle.js" type="module" data-swup-reload-script=""></script>
+
+<script src="/js/build/layouts/toc.js" type="module" data-swup-reload-script=""></script>
+
+<script src="/js/build/plugins/tabs.js" type="module" data-swup-reload-script=""></script>
+
+
+
+
+<script src="/js/build/libs/moment-with-locales.min.js" data-swup-reload-script=""></script>
+
+
+<script src="/js/build/layouts/essays.js" type="module" data-swup-reload-script=""></script>
+
+
+
+
+
+	
+</body>
+
+</html>
